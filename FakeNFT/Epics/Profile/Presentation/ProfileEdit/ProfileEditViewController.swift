@@ -2,10 +2,12 @@ import UIKit
 
 final class ProfileEditViewController: UIViewController {
     // MARK: - Public properties
+    
     var presenter: ProfileEditPresenterProtocol?
     var delegate: ProfileViewDelegate?
     
     // MARK: - Private properties
+    
     private let nameLabel = EditedParameterLabel.init(text: NSLocalizedString("profile.name", comment: ""))
     private let descriptionLabel = EditedParameterLabel.init(text: NSLocalizedString("profile.description", comment: ""))
     private let siteLabel = EditedParameterLabel.init(text: NSLocalizedString("profile.site", comment: ""))
@@ -92,7 +94,7 @@ final class ProfileEditViewController: UIViewController {
         button.setTitleColor(.ypWhiteUniversal, for: .normal)
         button.titleLabel?.textAlignment = .center
         button.layer.masksToBounds = true
-
+        
         button.addTarget(self, action: #selector(changePhotoDidTap), for: .touchUpInside)
         button.layer.zPosition = 2
         return button
@@ -101,6 +103,7 @@ final class ProfileEditViewController: UIViewController {
     private var profile: EditableProfileModel
     
     // MARK: - Life cycle
+    
     init(editableProfile: EditableProfileModel) {
         profile = editableProfile
         photoView.image = profile.avatarImage
@@ -124,21 +127,40 @@ final class ProfileEditViewController: UIViewController {
         nameTextField.delegate = self
         siteTextField.delegate = self
         descriptionTextView.delegate = self
+        
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTapGesture(_:)))
+        view.addGestureRecognizer(tapGesture)
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(keyboardWillShow(_:)),
+            name: UIResponder.keyboardWillShowNotification,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(keyboardWillHide(_:)),
+            name: UIResponder.keyboardWillHideNotification,
+            object: nil
+        )
     }
     
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
-        guard let isProfileChanged = presenter?.isProfileChanged() else { return }
+        NotificationCenter.default.removeObserver(self)
+        
+        guard let isProfileChanged = presenter?.profileChanged else { return }
         if isProfileChanged {
-            guard let profile = presenter?.getNewProfile() else { return }
+            guard let profile = presenter?.newProfile else { return }
             delegate?.sendNewProfile(profile)
         } else {
             dismiss(animated: true)
         }
     }
-    
+}
     
     // MARK: - Private methods
+extension ProfileEditViewController {
     private func addingUIElements() {
         view.addSubview(mainStack)
         
@@ -223,6 +245,7 @@ final class ProfileEditViewController: UIViewController {
             
             if self.isValidURL(urlString: updatedURL) {
                 self.newPhotoUrlLabel.text = updatedURL
+                self.presenter?.change(parameter: .imageUrl, with: updatedURL)
             } else {
                 self.showInvalidURLAlert()
             }
@@ -260,6 +283,7 @@ final class ProfileEditViewController: UIViewController {
     }
     
     // MARK: - Actioins
+    
     @objc private func changePhotoDidTap() {
         newPhotoUrlLabel.isHidden = false
         showURLInputAlert()
@@ -268,10 +292,37 @@ final class ProfileEditViewController: UIViewController {
     @objc private func didTapCloseButton() {
         dismiss(animated: true)
     }
+    
+    @objc private func handleTapGesture(_ gestureRecognizer: UITapGestureRecognizer) {
+        view.endEditing(true)
+    }
+    
+    @objc private func keyboardWillShow(_ notification: Notification) {
+        guard let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
+        
+        let textFieldMaxY = siteTextField.frame.maxY
+        let keyboardHeight = keyboardFrame.height
+        
+        let offsetY = presenter?.calculateViewYOffset(
+            textFieldY: textFieldMaxY,
+            viewHeight: view.frame.height,
+            keyboardHeight: keyboardHeight
+        ) ?? 0
+        UIView.animate(withDuration: 0.3) {
+            self.view.frame.origin.y = -offsetY
+        }
+    }
+    
+    @objc private func keyboardWillHide(_ notification: Notification) {
+        UIView.animate(withDuration: 0.3) {
+            self.view.frame.origin.y = 0
+        }
+    }
 }
 
 
 // MARK: - Extension UITextFieldDelegate
+
 extension ProfileEditViewController: UITextFieldDelegate, UITextViewDelegate {
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         textField.resignFirstResponder()

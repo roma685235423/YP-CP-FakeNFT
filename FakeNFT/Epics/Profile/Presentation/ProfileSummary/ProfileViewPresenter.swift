@@ -2,22 +2,53 @@ import Kingfisher
 import UIKit
 
 final class ProfileViewPresenter: ProfileViewPresenterProtocol {
-    // MARK: - Public properties
+    // MARK: - ProfileViewPresenterProtocol properties
+    
+    var editableProfile: EditableProfileModel? {
+        return currentProfileEditModel
+    }
+    var currentProfileResponse: ProfileResponseModel? {
+        return currentProfileResponseModel
+    }
+    var myNFTs: [String] {
+        guard let currentProfileResponseModel = currentProfileResponseModel else { return [] }
+        return currentProfileResponseModel.nfts
+    }
     weak var view: ProfileViewControllerProtocol?
+    
+    // MARK: - Public properties
+    
     weak var networkClient: ProfileNetworkClientProtocol?
+    
+    // MARK: - Private properties
     
     private var currentProfileResponseModel: ProfileResponseModel?
     private var currentProfileEditModel: EditableProfileModel?
     
-    // MARK: - Private properties
-    func viewDidLoad() {
+    // MARK: - ProfileViewPresenterProtocol
+    
+    func viewWillAppear() {
+        ProfileNetworkService.shared.fetchProfile(id: "1")
         UIBlockingProgressHUD.show()
         view?.activityIndicatorAnimation(inProcess: true)
         networkClient?.getDecodedProfile()
     }
+    
     func getEditableProfile() -> EditableProfileModel? {
         currentProfileEditModel
     }
+    
+    func getCurrentProfileResponse() -> ProfileResponseModel? {
+        currentProfileResponseModel
+    }
+    
+    func getMyNFTs() -> [String] {
+        guard let currentProfileResponseModel = currentProfileResponseModel else { return [] }
+        return currentProfileResponseModel.nfts
+    }
+    
+    // MARK: - Private properties
+    
     private func convertResponse(model: ProfileResponseModel?, image: UIImage?) -> EditableProfileModel? {
         guard let model = model else {return nil}
         return EditableProfileModel(
@@ -35,6 +66,7 @@ final class ProfileViewPresenter: ProfileViewPresenterProtocol {
 
 
 // MARK: - Extension ProfilePresenterNetworkProtocol
+
 extension ProfileViewPresenter: ProfilePresenterNetworkProtocol {
     func getProfile(with data: ProfileResponseModel) {
         DispatchQueue.main.async { [weak self] in
@@ -54,17 +86,25 @@ extension ProfileViewPresenter: ProfilePresenterNetworkProtocol {
             KingfisherManager.shared.retrieveImage(with: url){ result in
                 switch result {
                 case .success(let result):
-                    self.currentProfileEditModel = self.convertResponse(
-                        model: data,
-                        image: result.image
-                    )
-                    self.view?.setImageForPhotoView(result.image)
-                    self.view?.activityIndicatorAnimation(inProcess: false)
-                    UIBlockingProgressHUD.dismiss()
-                case .failure:
-                    self.view?.setImageForPhotoView(.userpick ?? UIImage())
-                    self.view?.activityIndicatorAnimation(inProcess: false)
-                    UIBlockingProgressHUD.dismiss()
+                    DispatchQueue.main.async { [weak self] in
+                        guard let self = self else { return }
+                        self.currentProfileResponseModel = data
+                        self.currentProfileEditModel = self.convertResponse(
+                            model: data,
+                            image: result.image
+                        )
+                        self.view?.setImageForPhotoView(result.image)
+                        self.view?.activityIndicatorAnimation(inProcess: false)
+                        UIBlockingProgressHUD.dismiss()
+                    }
+                case .failure(let error):
+                    DispatchQueue.main.async { [weak self] in
+                        guard let self = self else { return }
+                        self.view?.setImageForPhotoView(.userpick ?? UIImage())
+                        self.view?.activityIndicatorAnimation(inProcess: false)
+                        self.view?.showNetworkErrorAlert(with: error)
+                        UIBlockingProgressHUD.dismiss()
+                    }
                 }
             }
         }
@@ -77,12 +117,20 @@ extension ProfileViewPresenter: ProfilePresenterNetworkProtocol {
             case .success:
                 DispatchQueue.main.async { [weak self] in
                     guard let self = self else { return }
+                    UIBlockingProgressHUD.dismiss()
                     self.networkClient?.getDecodedProfile()
                 }
             case .failure(let error):
-                print("Ошибка при обновлении профиля: \(error)")
-                UIBlockingProgressHUD.dismiss()
+                self.showAlert(with: error)
             }
+        }
+    }
+    
+    func showAlert(with error: Error) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            view?.showNetworkErrorAlert(with: error)
+            UIBlockingProgressHUD.dismiss()
         }
     }
 }

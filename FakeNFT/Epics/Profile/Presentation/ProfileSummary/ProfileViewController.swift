@@ -2,16 +2,18 @@ import UIKit
 
 final class ProfileViewController: UIViewController {
     // MARK: - Public properties
+    
     var presenter: ProfileViewPresenterProtocol?
     
     // MARK: - Private properties
+    
     private let mainStack: UIStackView = {
         let stack = UIStackView(frame: .zero)
         stack.contentMode = .scaleAspectFit
         stack.axis = .vertical
         stack.spacing = 20
         stack.layer.masksToBounds = true
-        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.isUserInteractionEnabled = true
         return stack
     }()
     private let photoAndNameStack: UIStackView = {
@@ -20,7 +22,6 @@ final class ProfileViewController: UIViewController {
         stack.axis = .horizontal
         stack.spacing = 16
         stack.layer.masksToBounds = true
-        stack.translatesAutoresizingMaskIntoConstraints = false
         return stack
     }()
     private let photoView: UIImageView = {
@@ -37,13 +38,11 @@ final class ProfileViewController: UIViewController {
         view.layer.cornerRadius = ProfileConstants.profilePhotoSideSize/2
         view.contentMode = .scaleAspectFill
         view.layer.masksToBounds = true
-        view.translatesAutoresizingMaskIntoConstraints = false
         return view
     }()
     private let activityIndicator: UIActivityIndicatorView = {
         let activityIndicator = UIActivityIndicatorView()
         activityIndicator.color = .ypWhite
-        activityIndicator.translatesAutoresizingMaskIntoConstraints = false
         return activityIndicator
     }()
     private let userNameLabel: UILabel = {
@@ -51,27 +50,33 @@ final class ProfileViewController: UIViewController {
         label.textColor = .ypBlack
         label.font = .headline3
         label.textAlignment = .left
-        label.numberOfLines = 1
-        label.translatesAutoresizingMaskIntoConstraints = false
+        label.numberOfLines = 2
         return label
     }()
-    private let userDescriptionLabel: UILabel = {
-        let label = UILabel()
-        label.textColor = .ypBlack
-        label.font = .caption2
-        label.textAlignment = .left
-        label.numberOfLines = 0
+    private let userDescriptionTextView: UITextView = {
+        let textView = UITextView()
+        textView.textColor = .ypBlack
+        textView.font = .caption2
+        textView.textAlignment = .left
+        textView.isScrollEnabled = true
+        textView.isEditable = false
+        textView.backgroundColor = .clear
+        textView.textContainerInset = UIEdgeInsets.zero
+        textView.textContainer.lineFragmentPadding = 0
         
         let lineHeightPoints: CGFloat = 18.0
         let lineHeightPixels = lineHeightPoints / UIScreen.main.scale
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.lineSpacing = lineHeightPixels
-        let attributedText = NSAttributedString(string: label.text ?? "", attributes: [.paragraphStyle: paragraphStyle])
-        label.attributedText = attributedText
         
-        label.lineBreakMode = .byWordWrapping
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
+        textView.textContainer.lineBreakMode = .byWordWrapping
+        textView.typingAttributes = [
+            .font: UIFont.caption2,
+            .foregroundColor: UIColor.ypBlack,
+            .paragraphStyle: paragraphStyle
+        ]
+        
+        return textView
     }()
     private let userSiteLabel: UILabel = {
         let label = UILabel()
@@ -79,7 +84,7 @@ final class ProfileViewController: UIViewController {
         label.font = .caption1
         label.textAlignment = .left
         label.numberOfLines = 1
-        label.translatesAutoresizingMaskIntoConstraints = false
+        label.isUserInteractionEnabled = true
         return label
     }()
     private let tableView = UITableView()
@@ -87,38 +92,48 @@ final class ProfileViewController: UIViewController {
     private lazy var editProfileButton: UIButton = {
         let symbolConfiguration = UIImage.SymbolConfiguration(weight: .semibold)
         let button = UIButton.systemButton(
-            with: UIImage(systemName: "square.and.pencil", withConfiguration: symbolConfiguration) ?? UIImage(),
+            with: UIImage(
+                systemName: "square.and.pencil",
+                withConfiguration: symbolConfiguration
+            ) ?? UIImage(),
             target: self,
             action: #selector(didTapEditProfileButton)
         )
         button.tintColor = .ypBlack
-        button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()
     
     // MARK: - Life cycle
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .ypWhite
+        let gesture = UITapGestureRecognizer(target: self, action: #selector(openUserAboutWebView))
+        userSiteLabel.addGestureRecognizer(gesture)
         addingUIElements()
         tableViewConfigure()
         layoutConfigure()
-        presenter?.viewDidLoad()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        presenter?.viewWillAppear()
     }
     
     // MARK: - Private methods
+    
     private func addingUIElements() {
+        mainStack.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(mainStack)
         
-        mainStack.addSubview(editProfileButton)
-        mainStack.addSubview(photoAndNameStack)
-        mainStack.addSubview(userDescriptionLabel)
-        mainStack.addSubview(userSiteLabel)
-        mainStack.addSubview(tableView)
-        
-        photoAndNameStack.addSubview(photoView)
-        photoAndNameStack.addSubview(userNameLabel)
-        photoAndNameStack.addSubview(activityIndicator)
+        [editProfileButton, photoAndNameStack, userDescriptionTextView, userSiteLabel, tableView].forEach{
+            $0.translatesAutoresizingMaskIntoConstraints = false
+            mainStack.addSubview($0)
+        }
+        [photoView, userNameLabel, activityIndicator].forEach{
+            $0.translatesAutoresizingMaskIntoConstraints = false
+            photoAndNameStack.addSubview($0)
+        }
     }
     
     private func layoutConfigure() {
@@ -146,10 +161,10 @@ final class ProfileViewController: UIViewController {
             userNameLabel.trailingAnchor.constraint(equalTo: mainStack.trailingAnchor),
             userNameLabel.centerYAnchor.constraint(equalTo: photoView.centerYAnchor),
             
-            userDescriptionLabel.topAnchor.constraint(equalTo: photoAndNameStack.bottomAnchor, constant: 20),
-            userDescriptionLabel.leadingAnchor.constraint(equalTo: mainStack.leadingAnchor),
-            userDescriptionLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            userDescriptionLabel.heightAnchor.constraint(lessThanOrEqualToConstant: 72),
+            userDescriptionTextView.topAnchor.constraint(equalTo: photoAndNameStack.bottomAnchor, constant: 20),
+            userDescriptionTextView.leadingAnchor.constraint(equalTo: mainStack.leadingAnchor),
+            userDescriptionTextView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            userDescriptionTextView.heightAnchor.constraint(lessThanOrEqualToConstant: 72),
             
             userSiteLabel.topAnchor.constraint(equalTo: photoAndNameStack.bottomAnchor, constant: 100),
             userSiteLabel.leadingAnchor.constraint(equalTo: mainStack.leadingAnchor),
@@ -166,11 +181,10 @@ final class ProfileViewController: UIViewController {
     private func tableViewConfigure(){
         tableView.dataSource = self
         tableView.delegate = self
-        tableView.register(ProfileTableViewCell.self, forCellReuseIdentifier: ProfileTableViewCell.identifier)
+        tableView.register(ProfileTableViewCell.self)
         tableView.separatorStyle = .none
         tableView.backgroundColor = .clear
         tableView.isScrollEnabled = false
-        tableView.translatesAutoresizingMaskIntoConstraints = false
     }
     
     private func updateTableCellsLabels(from profile: ProfileResponseModel) {
@@ -195,46 +209,99 @@ final class ProfileViewController: UIViewController {
         }
     }
     
+    private func didTapMyNFTsCell() {
+        guard
+            let presenter = presenter,
+            let profile = presenter.currentProfileResponse
+        else { return }
+        
+        let myNFTsViewController = MyNFTsViewController()
+        let myNFTsNetworkClient = NFTsNetworkClient()
+        let myNFTsPresenter = MyNFTsPresenter(profile: profile)
+        
+        myNFTsViewController.presenter = myNFTsPresenter
+        
+        myNFTsPresenter.networkClient = myNFTsNetworkClient
+        myNFTsPresenter.view = myNFTsViewController
+        
+        let navigationController = UINavigationController(rootViewController: myNFTsViewController)
+        navigationController.modalPresentationStyle = .fullScreen
+        present(navigationController, animated: true)
+    }
+    
+    private func didTapFeaturedNFTsCell() {
+        guard
+            let presenter = presenter,
+            let profile = presenter.currentProfileResponse
+        else { return }
+        
+        let featuredNFTsViewController = FavoriteNFTsViewController()
+        let featuredNFTsNetworkClient = NFTsNetworkClient()
+        let featuredNFTsPresenter = FavoriteNFTsPresenter(profile: profile)
+        let profileNetworkClient = ProfileNetworkClient()
+        featuredNFTsPresenter.callback = {
+            presenter.viewWillAppear()
+        }
+        featuredNFTsViewController.presenter = featuredNFTsPresenter
+        
+        featuredNFTsPresenter.networkClient = featuredNFTsNetworkClient
+        featuredNFTsPresenter.profileNetworkClient = profileNetworkClient
+        featuredNFTsPresenter.view = featuredNFTsViewController
+        
+        let navigationController = UINavigationController(rootViewController: featuredNFTsViewController)
+        navigationController.modalPresentationStyle = .fullScreen
+        present(navigationController, animated: true)
+    }
+    
     // MARK: - Actions
+    
     @objc private func didTapEditProfileButton(){
-        guard let profile = presenter?.getEditableProfile() else { return }
+        guard let profile = presenter?.editableProfile else { return }
         let profileEditPresenter = ProfileEditPresenter(editableProfile: profile)
         let profileEditViewController = ProfileEditViewController(editableProfile: profile)
         profileEditViewController.presenter = profileEditPresenter
         profileEditViewController.delegate = self
         present(profileEditViewController, animated: true)
     }
+    
+    @objc private func openUserAboutWebView() {
+        guard let url = presenter?.currentProfileResponse?.website else { return }
+        let presenter = WebViewPresenter(url: url)
+        let webView = UserAboutWebView()
+        webView.presenter = presenter
+        presenter.view = webView
+        present(webView, animated: true)
+    }
 }
 
 
 // MARK: - UITableViewDelegate
+
 extension ProfileViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         switch indexPath.row {
         case 0:
-            print("\(ProfileConstants.tableLabelArray[indexPath.row])")
+            didTapMyNFTsCell()
         case 1:
-            print("\(ProfileConstants.tableLabelArray[indexPath.row])")
+            didTapFeaturedNFTsCell()
         case 2:
-            print("\(ProfileConstants.tableLabelArray[indexPath.row])")
+            openUserAboutWebView()
         default:
-            print("1111111111111")
+            print("Uncknown row")
         }
     }
 }
 
 
 // MARK: - Extension UITableViewDataSource
+
 extension ProfileViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         ProfileConstants.tableLabelArray.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let cell = tableView.dequeueReusableCell(
-            withIdentifier: ProfileTableViewCell.identifier,
-            for: indexPath
-        ) as? ProfileTableViewCell else { return UITableViewCell() }
+        let cell: ProfileTableViewCell = tableView.dequeueReusableCell()
         cell.configure(title: ProfileConstants.tableLabelArray[indexPath.row])
         return cell
     }
@@ -246,6 +313,7 @@ extension ProfileViewController: UITableViewDataSource {
 
 
 // MARK: - Extension ProfileViewControllerProtocol
+
 extension ProfileViewController: ProfileViewControllerProtocol{
     func activityIndicatorAnimation(inProcess: Bool){
         DispatchQueue.main.async { [weak self] in
@@ -266,7 +334,7 @@ extension ProfileViewController: ProfileViewControllerProtocol{
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
-            self.userDescriptionLabel.text = profile.description
+            self.userDescriptionTextView.text = profile.description
             self.userNameLabel.text = profile.name
             self.userSiteLabel.text = profile.website.absoluteString
             self.updateTableCellsLabels(from: profile)
@@ -275,10 +343,37 @@ extension ProfileViewController: ProfileViewControllerProtocol{
 }
 
 // MARK: - Extension ProfileViewDelegate
+
 extension ProfileViewController: ProfileViewDelegate {
     func sendNewProfile(_ profile: ProfileResponseModel) {
         DispatchQueue.main.async {
             self.presenter?.updateProfile(with: profile)
         }
+    }
+    
+    func showNetworkErrorAlert(with error: Error) {
+        if presentedViewController is UIAlertController { return }
+        
+        let alertMessage = ("\(NSLocalizedString("nft.error.message", comment: ""))\n\(error)")
+        
+        let alert = UIAlertController(
+            title: NSLocalizedString("nft.error.title", comment: ""),
+            message: alertMessage,
+            preferredStyle: .alert)
+        
+        let repeatAction = UIAlertAction(
+            title: NSLocalizedString("profile.photo.retryButton", comment: ""),
+            style: .default
+        ) { _ in
+            self.presenter?.viewWillAppear()
+        }
+        let cancelAction = UIAlertAction(
+            title: NSLocalizedString("profile.photo.cancelButton", comment: ""),
+            style: .cancel
+        )
+        alert.addAction(repeatAction)
+        alert.addAction(cancelAction)
+        
+        self.present(alert, animated: true)
     }
 }

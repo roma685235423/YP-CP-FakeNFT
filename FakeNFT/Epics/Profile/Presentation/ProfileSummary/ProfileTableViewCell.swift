@@ -1,8 +1,8 @@
 import UIKit
 
-final class ProfileTableViewCell: UITableViewCell {
+final class ProfileTableViewCell: UITableViewCell, ReuseIdentifying {
     // MARK: - Private properties
-    static let identifier = "ProfileTableViewCell"
+    
     private let titleLabel = UILabel()
     private let chevronView = UIImageView()
     private let stackView: UIStackView = {
@@ -15,6 +15,7 @@ final class ProfileTableViewCell: UITableViewCell {
     }()
     
     // MARK: - Life cicle
+    
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         self.selectionStyle = .none
@@ -33,11 +34,13 @@ final class ProfileTableViewCell: UITableViewCell {
     }
     
     // MARK: - Public methods
+    
     func configure(title: String) {
         configureTitleLabel(with: title)
     }
     
     // MARK: - Private methods
+    
     private func layoutConfigure() {
         contentView.addSubview(stackView)
         

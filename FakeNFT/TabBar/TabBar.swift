@@ -1,6 +1,15 @@
 import UIKit
 
 final class MainTabBarController: UITabBarController {
+    var catalogViewController: UIViewController {
+        let presenter = CatalogViewPresenter()
+        let alertPresenter = AlertPresenter()
+        let catalogView = CatalogViewController(presenter: presenter, alertPresenter: alertPresenter)
+        presenter.viewControllerInitialized(viewController: catalogView)
+        alertPresenter.injectDelegate(viewController: catalogView)
+        return catalogView
+    }
+    
     // MARK: - Init
     var profileNetworkClient: ProfileNetworkClientProtocol?
     
@@ -18,9 +27,11 @@ final class MainTabBarController: UITabBarController {
 
         let basketImage = UIImage(named: "basket")?.withRenderingMode(.alwaysOriginal).withTintColor(.ypBlack)
         let basketSelectedImage = UIImage(named: "basket")?.withRenderingMode(.alwaysOriginal).withTintColor(.ypBlueUniversal)
-
-        let statisticImage = UIImage(systemName: "flag.2.crossed.fill", withConfiguration: statisticMediumConfigForImage)?.withRenderingMode(.alwaysOriginal).withTintColor(.ypBlack)
-        let statisticSelectedImage = UIImage(systemName: "flag.2.crossed.fill", withConfiguration: statisticMediumConfigForImage)?.withRenderingMode(.alwaysOriginal).withTintColor(.ypBlueUniversal)
+        
+        let statisticImage = UIImage.statistics?.withConfiguration(statisticMediumConfigForImage).withRenderingMode(.alwaysOriginal).withTintColor(.ypBlack)
+        let statisticSelectedImage = UIImage.statistics?.withConfiguration(statisticMediumConfigForImage).withRenderingMode(.alwaysOriginal).withTintColor(.ypBlueUniversal)
+        
+        
         let profilePresenter = ProfileViewPresenter()
         let profileViewController = ProfileViewController()
             
@@ -40,7 +51,7 @@ final class MainTabBarController: UITabBarController {
                 title: NSLocalizedString("tabBar.profile", comment: "")
             ),
             generateViewController(
-                CatalogViewController(),
+                catalogViewController,
                 image: catalogImage,
                 selectedImage: catalogSelectedImage,
                 title: NSLocalizedString("tabBar.catalog", comment: "")
