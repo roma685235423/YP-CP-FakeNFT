@@ -77,7 +77,7 @@ final class UserListViewController: NiblessViewController {
     }
 }
 
-// MARK:  - UICollectionViewDelegate
+// MARK: - UICollectionViewDelegate
 extension UserListViewController: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let viewController = createUserCardViewController(for: indexPath)

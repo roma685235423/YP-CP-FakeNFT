@@ -107,7 +107,11 @@ private extension NFTCollectionViewController {
             .sink { [weak self] isErrorHidden in
                 self?.hideCollectionView()
                 self?.collectionView.refreshControl?.endRefreshing()
-                isErrorHidden ? self?.errorView.hideErrorView() : self?.errorView.showErrorView()
+                if isErrorHidden {
+                    self?.errorView.hideErrorView()
+                } else {
+                    self?.errorView.showErrorView()
+                }
             }
             .store(in: &subscriptions)
 

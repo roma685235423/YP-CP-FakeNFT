@@ -96,7 +96,7 @@ final class WebViewController: NiblessViewController {
     }
 }
 
-// MARK - UI
+// MARK: - UI
 private extension WebViewController {
     func addSubviews() {
         view.backgroundColor = .ypWhite

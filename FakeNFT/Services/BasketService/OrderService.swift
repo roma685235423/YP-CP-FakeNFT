@@ -76,7 +76,7 @@ final class OrderService: OrderServiceProtocol {
                     completion(nfts)
                 }
                 
-            case .failure(_):
+            case .failure:
                 print("Error with fetching NFTs")
                 completion(nil)
             }
