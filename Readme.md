@@ -85,6 +85,8 @@
 
 ## Корзина
 
+[Скринкаст корзины](https://drive.google.com/file/d/1d3LceBFMqRUsQA3-4K76WMWBCAFYI5Cv/view?usp=sharing)
+
 **Экран заказа**
 
 На экране таблицы отображается таблица (UITableView) со списком добавленных в заказ NFT.
