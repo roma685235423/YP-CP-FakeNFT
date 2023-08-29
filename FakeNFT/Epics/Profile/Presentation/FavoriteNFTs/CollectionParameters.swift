@@ -1,7 +1,5 @@
 import UIKit
 
-import UIKit
-
 /// Параметры для отображения выделенной коллекции.
 struct FeaturedCollectionParameters {
     // MARK: - Public Properties

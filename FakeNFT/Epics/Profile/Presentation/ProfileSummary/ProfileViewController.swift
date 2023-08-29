@@ -113,6 +113,7 @@ final class ProfileViewController: UIViewController {
         addingUIElements()
         tableViewConfigure()
         layoutConfigure()
+        presenter?.viewDidLoad()
     }
     
     override func viewWillAppear(_ animated: Bool) {

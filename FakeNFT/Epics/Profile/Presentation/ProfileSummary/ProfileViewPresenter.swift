@@ -27,6 +27,10 @@ final class ProfileViewPresenter: ProfileViewPresenterProtocol {
     
     // MARK: - ProfileViewPresenterProtocol
     
+    func viewDidLoad() {
+        BasketPresenter(view: BasketViewController()).loadBasket()
+    }
+    
     func viewWillAppear() {
         ProfileNetworkService.shared.fetchProfile(id: "1")
         UIBlockingProgressHUD.show()
